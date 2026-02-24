@@ -38,7 +38,7 @@ GOLD = c(255, 170, 0)
 YELLOW = c(255, 255, 0)
 GREEN = c(85, 255, 85)
 AQUA = c(85, 255, 255)
-RED = c(255, 80, 80)
+RED = c(170, 0, 0)
 
 # ── star colors ───────────────────────────────────────────────────────────────
 
@@ -131,14 +131,14 @@ def fetch_all(names: list[str]) -> dict[str, dict | None]:
 
 # ── display ───────────────────────────────────────────────────────────────────
 
-NW = 20  # name
+NW = 17  # name
 SW = 5  # stars (raw digit width)
 FW = 6  # fkdr
 WW = 4  # winstreak
 
-BAR = f"{GRAY}{'─' * 42}{R}"
+BAR = f"{GRAY}{'─' * 39}{R}"
 HEADER = (
-    f"  {GRAY}"
+    f"{GRAY}"
     f"{'player':<{NW}}  "
     f"{'stars':>{SW}}  "
     f"{'fkdr':>{FW}}  "
@@ -151,7 +151,7 @@ def row(name: str, data: dict | None) -> str:
     nc = f"{WHITE}{name:<{NW}}{R}"
 
     if data is None:
-        return f"  {nc}  {GRAY}{'—':>{SW}}  {'—':>{FW}}  {'—':>{WW}}{R}"
+        return f"{nc}  {GRAY}{'—':>{SW}}  {'—':>{FW}}  {'—':>{WW}}{R}"
 
     # Manual padding — ANSI escapes break f-string width counting
     s_raw = str(data["stars"])
@@ -162,17 +162,17 @@ def row(name: str, data: dict | None) -> str:
     f_str = " " * max(0, FW - len(f_raw)) + fmt_fkdr(data["fkdr"])
     w_str = " " * max(0, WW - len(w_raw)) + fmt_ws(data["winstreak"])
 
-    return f"  {nc}  {s_str}  {f_str}  {w_str}"
+    return f"{nc}  {s_str}  {f_str}  {w_str}"
 
 
 def print_table(names: list[str], results: dict[str, dict | None]) -> None:
     print()
-    print(f"  {BAR}")
+    print(BAR)
     print(HEADER)
-    print(f"  {BAR}")
+    print(BAR)
     for name in names:
         print(row(name, results.get(name)))
-    print(f"  {BAR}")
+    print(BAR)
     print()
 
 
@@ -190,9 +190,6 @@ def run() -> None:
     if not LOG_PATH.exists():
         sys.exit(f"Log not found: {LOG_PATH}")
 
-    print(f"\n  {BOLD}bedwars overlay{R}  {GRAY}{LOG_PATH}{R}")
-    print(f"  {GRAY}/who → lobby   /w !<ign> → single player   ^C quit{R}\n")
-
     with open(LOG_PATH, encoding="utf-8", errors="replace") as f:
         f.seek(0, 2)
         while True:
@@ -204,7 +201,12 @@ def run() -> None:
             m = RE_WHO.search(line)
             if m:
                 names = [n.strip() for n in m.group(1).split(",") if n.strip()]
-                print_table(names, fetch_all(names))
+                results = fetch_all(names)
+                names.sort(
+                    key=lambda n: results[n]["fkdr"] if results[n] else float("inf"),
+                    reverse=True,
+                )
+                print_table(names, results)
                 continue
 
             m = RE_LOOKUP.search(line)
@@ -218,4 +220,4 @@ if __name__ == "__main__":
     try:
         run()
     except KeyboardInterrupt:
-        print(f"\n  {GRAY}bye{R}\n")
+        pass
